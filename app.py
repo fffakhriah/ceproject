@@ -1,27 +1,41 @@
 import streamlit as st
+import pandas as pd
 import matplotlib.pyplot as plt
-from aco import ACO
+from aco import AntColonyOptimization
 
-st.title("🎬 Cinema Ticket Pricing Optimization (ACO)")
+st.set_page_config(page_title="Cinema Ticket Pricing Optimization", layout="centered")
 
+st.title("🎬 Cinema Ticket Price Optimization using ACO")
+
+# Load dataset
+data = pd.read_csv("cinema_ticket_pricing_clean.csv")
+st.subheader("Dataset Preview")
+st.dataframe(data)
+
+# Parameters
 st.sidebar.header("ACO Parameters")
-ants = st.sidebar.slider("Number of Ants", 10, 50, 20)
-iterations = st.sidebar.slider("Iterations", 20, 100, 50)
-evap = st.sidebar.slider("Evaporation Rate", 0.1, 0.9, 0.5)
-
-aco = ACO(n_ants=ants, n_iterations=iterations, evaporation=evap)
+num_ants = st.sidebar.slider("Number of Ants", 5, 50, 20)
+num_iterations = st.sidebar.slider("Number of Iterations", 10, 200, 50)
+evaporation_rate = st.sidebar.slider("Evaporation Rate", 0.1, 0.9, 0.5)
 
 if st.button("Run Optimization"):
-    price, revenue, history = aco.run()
+    aco = AntColonyOptimization(
+        data,
+        num_ants=num_ants,
+        num_iterations=num_iterations,
+        evaporation_rate=evaporation_rate
+    )
 
-    st.success(f"Optimal Ticket Price: RM{price}")
-    st.info(f"Maximum Revenue: RM{revenue:.2f}")
+    best_price, best_revenue, convergence = aco.run()
 
-    fig, ax = plt.subplots()
-    ax.plot(history)
-    ax.set_xlabel("Iteration")
-    ax.set_ylabel("Revenue")
-    ax.set_title("Convergence Curve")
+    st.success(f"Optimal Ticket Price: RM {best_price}")
+    st.success(f"Maximum Revenue: RM {best_revenue}")
 
+    # Plot convergence
+    st.subheader("ACO Convergence Curve")
+    fig = plt.figure()
+    plt.plot(convergence)
+    plt.xlabel("Iteration")
+    plt.ylabel("Best Revenue")
+    plt.title("ACO Convergence Curve")
     st.pyplot(fig)
-
