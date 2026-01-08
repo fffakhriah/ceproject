@@ -16,18 +16,3 @@ The dataset contains:
 - number_of_person
 
 ---
-
-## Files
-
-| File | Description |
-|------|-------------|
-| aco.py | Implementation of Ant Colony Optimization algorithm |
-| app.py | Streamlit web dashboard |
-| requirements.txt | Required Python libraries |
-| cinema_ticket_pricing_clean.csv | Dataset |
-
----
-
-## How to Run
-
-### Install dependencies
