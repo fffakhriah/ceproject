@@ -1,56 +1,61 @@
+import pandas as pd
 import numpy as np
 
-class ACO:
-    def __init__(self, n_ants=20, n_iterations=50,
-                 alpha=1, beta=2, evaporation=0.5):
-        
-        self.n_ants = n_ants
-        self.n_iterations = n_iterations
-        self.alpha = alpha
-        self.beta = beta
-        self.evaporation = evaporation
-        
-        self.price_range = np.arange(10, 31)  # RM10–RM30
-        self.pheromone = np.ones(len(self.price_range))
+class AntColonyOptimization:
+    def __init__(self, data, num_ants=20, num_iterations=50, evaporation_rate=0.5):
+        self.data = data
+        self.prices = data["ticket_price"].values
+        self.customers = data["number_of_person"].values
+        self.revenue = self.prices * self.customers
 
-    def demand(self, price):
-        return max(0, 200 - 5 * price)
+        self.num_ants = num_ants
+        self.num_iterations = num_iterations
+        self.evaporation_rate = evaporation_rate
 
-    def revenue(self, price):
-        return price * self.demand(price)
+        self.num_prices = len(self.prices)
+        self.pheromone = np.ones(self.num_prices)
+
+        self.best_price = None
+        self.best_revenue = 0
+        self.convergence = []
 
     def run(self):
-        best_price = None
-        best_revenue = -np.inf
-        history = []
+        for iteration in range(self.num_iterations):
+            all_solutions = []
+            all_revenues = []
 
-        for iteration in range(self.n_iterations):
-            revenues = []
-            prices = []
+            probabilities = self.pheromone / self.pheromone.sum()
 
-            for _ in range(self.n_ants):
-                prob = (self.pheromone ** self.alpha) * \
-                       (1 / (self.price_range + 1)) ** self.beta
-                prob /= prob.sum()
+            for ant in range(self.num_ants):
+                index = np.random.choice(range(self.num_prices), p=probabilities)
 
-                idx = np.random.choice(len(self.price_range), p=prob)
-                price = self.price_range[idx]
+                price = self.prices[index]
+                customer = self.customers[index]
+                revenue = price * customer
 
-                rev = self.revenue(price)
-                prices.append(idx)
-                revenues.append(rev)
+                all_solutions.append(index)
+                all_revenues.append(revenue)
 
-                if rev > best_revenue:
-                    best_revenue = rev
-                    best_price = price
+                if revenue > self.best_revenue:
+                    self.best_revenue = revenue
+                    self.best_price = price
 
             # Evaporation
-            self.pheromone *= (1 - self.evaporation)
+            self.pheromone = (1 - self.evaporation_rate) * self.pheromone
 
             # Update pheromone
-            for i, rev in zip(prices, revenues):
-                self.pheromone[i] += rev / 1000
+            for i in range(self.num_ants):
+                self.pheromone[all_solutions[i]] += all_revenues[i] / max(self.revenue)
 
-            history.append(best_revenue)
+            self.convergence.append(self.best_revenue)
 
-        return best_price, best_revenue, history
+        return self.best_price, self.best_revenue, self.convergence
+
+
+if __name__ == "__main__":
+    data = pd.read_csv("cinema_ticket_pricing_clean.csv")
+    aco = AntColonyOptimization(data)
+    price, revenue, curve = aco.run()
+
+    print("Optimal Ticket Price: RM", price)
+    print("Maximum Revenue: RM", revenue)
